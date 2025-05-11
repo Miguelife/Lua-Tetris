@@ -1,2 +1,4 @@
 # Lua-Tetris
-Lua Tetris clone
+Tetris clone using the Love2D framework and Lua
+
+By Miguelife
