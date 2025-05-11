@@ -5,6 +5,7 @@ require "tetrimino"
 require "constants"
 require "piece"
 require "spritesheet"
+require "audio"
 
 -- MARK: LOAD
 function love.load()
@@ -22,9 +23,8 @@ function love.load()
     love.window.setTitle('Tetris!')
     love.window.setMode(GameController.grid.width * Constants.tileSize, GameController.grid.height * Constants.tileSize)
 
-    local music = love.audio.newSource("assets/music/retro_beat.ogg", "stream")
-    music:setLooping(true)
-    music:play()
+    -- Audio
+    Audio.playMusic("retro_beat")
 end
 
 -- MARK: UPDATE

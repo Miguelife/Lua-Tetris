@@ -69,13 +69,18 @@ function Grid:clearLines()
     return hasClearedLines
 end
 
-function Grid:draw()
+function Grid:draw(onGame)
     -- Background
+    if not onGame then
+        love.graphics.setColor(1, 1, 1)
+    else
+        love.graphics.setColor(0.8, 0.8, 0.8)
+    end
+    
     local background = love.graphics.newImage("assets/images/background.png")
     love.graphics.draw(background, 0, 0, 0, 2.5, 2.5)
 
     -- Draw pieces
-    love.graphics.setColor(0.8, 0.8, 0.8)
     for _, piece in ipairs(self.pieces) do
         Spritesheet:draw(piece.sprite, piece.x, piece.y)
     end

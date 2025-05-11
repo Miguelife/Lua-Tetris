@@ -84,6 +84,7 @@ function Tetrimino:hardDrop()
 end
 
 function Tetrimino:draw()
+    love.graphics.setColor(1, 1, 1)
     for _, piece in ipairs(self:getPieces()) do
         local x = piece.x + self.x
         local y = piece.y + self.y
