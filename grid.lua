@@ -32,7 +32,7 @@ end
 
 function Grid:clearLines()
     -- We check if there are any full lines.
-    local hasClearedLines = false
+    local linesCleared = 0
 
     -- We go through each row of the grid to check for full lines.
     for y = 0, self.height - 1 do
@@ -48,7 +48,7 @@ function Grid:clearLines()
         
         -- If the line is full
         if isLineFull then
-            hasClearedLines = true
+            linesCleared = linesCleared + 1
 
             -- We remove all pieces in that line.
             for i = #self.pieces, 1, -1 do
@@ -66,7 +66,7 @@ function Grid:clearLines()
         end
     end
     
-    return hasClearedLines
+    return linesCleared
 end
 
 function Grid:draw(onGame)

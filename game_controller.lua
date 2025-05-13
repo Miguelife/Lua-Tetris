@@ -7,6 +7,13 @@ function GameController.new()
     self.timer = 0
     self.grid = Grid.new()
     self.state = "INITIAL"
+    self.uiWidth = 150
+    self.linesCleared = 0
+    self.level = 1
+    self.score = 0
+    self.linesPerLevel = 10
+    self.scoreMultiplier = 100
+    self.updateTime = 1
     self.tetriminos = {
         TetriminoT,
         TetriminoI,
@@ -24,6 +31,11 @@ function GameController:start()
     self.state = "GAME"
     self.currentTetrimino = self:generateTetrimino()
     self.grid = Grid.new()
+    self.linesCleared = 0
+    self.level = 1
+    self.score = 0
+    self.linesPerLevel = 10
+    self.updateTime = 1
     self.timer = 0
 end
 
@@ -64,7 +76,53 @@ function GameController:draw()
 end
 
 function GameController:getWindowSize()
-    return { x = self.grid.width * Constants.tileSize, y = self.grid.height * Constants.tileSize }
+    return { x = self.grid.width * Constants.tileSize + self.uiWidth, y = self.grid.height * Constants.tileSize }
+end
+
+function GameController:drawDefaultScreen(title, text)
+        -- Title text
+        local windowSize = self:getWindowSize()
+        love.graphics.setColor(1, 1, 1)
+        local originalFont = love.graphics.getFont()
+        local largeFont = love.graphics.newFont(48)
+        love.graphics.setFont(largeFont)
+        local textWidth = largeFont:getWidth(title)
+        local tetrisTextHeight = largeFont:getHeight()
+        love.graphics.print(
+            title,
+            windowSize.x / 2 - textWidth / 2,
+            tetrisTextHeight / 1.5
+        )
+        love.graphics.setFont(originalFont)
+    
+        -- Text
+        local windowSize = self:getWindowSize()
+        love.graphics.setColor(1, 1, 1)
+        local originalFont = love.graphics.getFont()
+        local largeFont = love.graphics.newFont(24)
+        love.graphics.setFont(largeFont)
+        local textWidth = largeFont:getWidth(text)
+        local pressStartTextHeight = largeFont:getHeight()
+        love.graphics.print(
+            text,
+            windowSize.x / 2 - textWidth / 2,
+            tetrisTextHeight * 1.5 + pressStartTextHeight / 1.5
+        )
+        love.graphics.setFont(originalFont)
+end
+
+function GameController:drawUI()
+    love.graphics.setColor(0, 0, 0, 0.25)
+    love.graphics.rectangle("fill", self:getWindowSize().x - self.uiWidth, 0, self.uiWidth, self:getWindowSize().y)
+
+    love.graphics.setColor(1, 1, 1)
+    local originalFont = love.graphics.getFont()
+    local newFont = love.graphics.newFont(22)
+    love.graphics.setFont(newFont)
+    love.graphics.print("Level: " .. self.level, self:getWindowSize().x - self.uiWidth + 10, 10)
+    love.graphics.print("Lines: " .. self.linesCleared, self:getWindowSize().x - self.uiWidth + 10, 50)
+    love.graphics.print("Score: " .. self.score, self:getWindowSize().x - self.uiWidth + 10, 90)
+    love.graphics.setFont(originalFont)
 end
 
 -- MARK: INITIAL
@@ -82,51 +140,34 @@ function GameController:drawInitial()
     -- Grid
     local emptyGrid = Grid.new()
     emptyGrid:draw(false)
-
-    -- Title text
-    local windowSize = self:getWindowSize()
-    love.graphics.setColor(1, 1, 1)
-    local text = "Tetris!"
-    local originalFont = love.graphics.getFont()
-    local largeFont = love.graphics.newFont(48)
-    love.graphics.setFont(largeFont)
-    local textWidth = largeFont:getWidth(text)
-    local tetrisTextHeight = largeFont:getHeight()
-    love.graphics.print(
-        text,
-        windowSize.x / 2 - textWidth / 2,
-        tetrisTextHeight / 1.5
-    )
-    love.graphics.setFont(originalFont)
-
-    -- Press start text
-    local windowSize = self:getWindowSize()
-    love.graphics.setColor(1, 1, 1)
-    local text = "Press space to start"
-    local originalFont = love.graphics.getFont()
-    local largeFont = love.graphics.newFont(24)
-    love.graphics.setFont(largeFont)
-    local textWidth = largeFont:getWidth(text)
-    local pressStartTextHeight = largeFont:getHeight()
-    love.graphics.print(
-        text,
-        windowSize.x / 2 - textWidth / 2,
-        tetrisTextHeight * 1.5 + pressStartTextHeight / 1.5
-    )
-    love.graphics.setFont(originalFont)
+    -- Screen
+    self:drawDefaultScreen("Tetris!", "Press space to start")
 end
 
 -- MARK: GAME
 function GameController:updateGame(dt)
     GameController.timer = GameController.timer + dt
-    if GameController.timer >= Constants.updateTime then
+    if GameController.timer >= self.updateTime then
         GameController.timer = 0
 
         self.currentTetrimino:move(0, 1)
 
         if not self.currentTetrimino.active then
             self.grid:addTetrimino(self.currentTetrimino)
-            local hasClearedLines = self.grid:clearLines()
+            local linesCleared = self.grid:clearLines()
+
+            if linesCleared > 0 then
+                self.linesCleared = self.linesCleared + linesCleared
+                self.score = linesCleared * self.scoreMultiplier
+            end
+        
+            if self.linesCleared >= self.linesPerLevel then
+                self.level = self.level + 1
+                self.updateTime = self.updateTime * 0.9
+                self.linesPerLevel = self.linesPerLevel + 1
+                self.scoreMultiplier = self.scoreMultiplier * 1.5
+            end
+
             local gameOver = not self.grid:isFreeAt(self.grid.spawnPoint.x, self.grid.spawnPoint.y)
 
             if gameOver then
@@ -137,7 +178,7 @@ function GameController:updateGame(dt)
 
             self.currentTetrimino = self:generateTetrimino()
 
-            local effect = hasClearedLines and "upgrade4" or "hit1"
+            local effect = linesCleared > 0 and "upgrade4" or "hit1"
             Audio.playEffect(effect)
         end
     end
@@ -157,6 +198,7 @@ end
 function GameController:drawGame()
     self.grid:draw(true)
     self.currentTetrimino:draw()
+    self:drawUI()
 end
 
 function GameController:generateTetrimino()
@@ -181,38 +223,7 @@ function GameController:drawGameOver()
     -- Grid
     local emptyGrid = Grid.new()
     emptyGrid:draw(false)
-
-    -- Title text
-    local windowSize = self:getWindowSize()
-    love.graphics.setColor(1, 1, 1)
-    local text = "Game Over!"
-    local originalFont = love.graphics.getFont()
-    local largeFont = love.graphics.newFont(48)
-    love.graphics.setFont(largeFont)
-    local textWidth = largeFont:getWidth(text)
-    local tetrisTextHeight = largeFont:getHeight()
-    love.graphics.print(
-        text,
-        windowSize.x / 2 - textWidth / 2,
-        tetrisTextHeight / 1.5
-    )
-    love.graphics.setFont(originalFont)
-
-    -- Press start text
-    local windowSize = self:getWindowSize()
-    love.graphics.setColor(1, 1, 1)
-    local text = "Press space to restart"
-    local originalFont = love.graphics.getFont()
-    local largeFont = love.graphics.newFont(24)
-    love.graphics.setFont(largeFont)
-    local textWidth = largeFont:getWidth(text)
-    local pressStartTextHeight = largeFont:getHeight()
-    love.graphics.print(
-        text,
-        windowSize.x / 2 - textWidth / 2,
-        tetrisTextHeight * 1.5 + pressStartTextHeight / 1.5
-    )
-    love.graphics.setFont(originalFont)
+    self:drawDefaultScreen("Game Over!", "Press space to restart")
 end
 
 -- MARK: PAUSE
@@ -230,36 +241,5 @@ function GameController:drawPause()
     -- Grid
     local emptyGrid = Grid.new()
     emptyGrid:draw(false)
-
-    -- Title text
-    local windowSize = self:getWindowSize()
-    love.graphics.setColor(1, 1, 1)
-    local text = "Tetris!"
-    local originalFont = love.graphics.getFont()
-    local largeFont = love.graphics.newFont(48)
-    love.graphics.setFont(largeFont)
-    local textWidth = largeFont:getWidth(text)
-    local tetrisTextHeight = largeFont:getHeight()
-    love.graphics.print(
-        text,
-        windowSize.x / 2 - textWidth / 2,
-        tetrisTextHeight / 1.5
-    )
-    love.graphics.setFont(originalFont)
-
-    -- Press start text
-    local windowSize = self:getWindowSize()
-    love.graphics.setColor(1, 1, 1)
-    local text = "Press space to resume"
-    local originalFont = love.graphics.getFont()
-    local largeFont = love.graphics.newFont(24)
-    love.graphics.setFont(largeFont)
-    local textWidth = largeFont:getWidth(text)
-    local pressStartTextHeight = largeFont:getHeight()
-    love.graphics.print(
-        text,
-        windowSize.x / 2 - textWidth / 2,
-        tetrisTextHeight * 1.5 + pressStartTextHeight / 1.5
-    )
-    love.graphics.setFont(originalFont)
+    self:drawDefaultScreen("Paused", "Press space to resume")
 end

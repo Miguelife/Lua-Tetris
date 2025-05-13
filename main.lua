@@ -6,6 +6,7 @@ require "constants"
 require "piece"
 require "spritesheet"
 require "audio"
+require "window"
 
 -- MARK: LOAD
 function love.load()
@@ -19,9 +20,7 @@ function love.load()
     GameController = GameController.new()
 
     -- Window
-    love.graphics.setDefaultFilter('nearest', 'nearest')
-    love.window.setTitle('Tetris!')
-    love.window.setMode(GameController.grid.width * Constants.tileSize, GameController.grid.height * Constants.tileSize)
+    Window.load()
 
     -- Audio
     Audio.playMusic("retro_beat")
